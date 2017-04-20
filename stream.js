@@ -121,6 +121,51 @@ page.open(opts.url, function (status) {
 			page.evaluateJavaScript('function () { ' + opts.script + '}');
 		}
 
+
+		// <--------------------- CUSTOMISED CODE BELOW --------------->
+		// Kept separate to avoid conflicts due to future pulls
+
+		// To get selector based snapshot with margin percentage (percentage based on available screen area)
+		// author: harkirat
+		if(opts.focusSelector && opts.focusSelector.selector) {
+			var xMarginPercent = opts.focusSelector.horizMargin || 0;
+			var yMarginPercent = opts.focusSelector.vertMargin || 0;
+
+			var focusRect = page.evaluate(function (el) {
+				return document.querySelector(el).getBoundingClientRect();
+			}, opts.focusSelector.selector);
+
+
+			if(yMarginPercent > 0 && yMarginPercent <= 1){
+				var availableVertMargin = opts.height - focusRect.height;
+				var extraVertHeight = availableVertMargin * yMarginPercent;
+				focusRect.height += extraVertHeight;
+
+				focusRect.top -= extraVertHeight / 2;
+			}
+
+			if(xMarginPercent > 0 && xMarginPercent <= 1){
+				var availableHorizMargin = opts.width - focusRect.width;
+				var extraHorizWidth = availableHorizMargin * xMarginPercent;
+				focusRect.width += extraHorizWidth;
+
+				focusRect.left -= extraHorizWidth / 2;
+			}
+
+			page.clipRect = focusRect;
+		}
+
+		// To get area till certain pixels only
+		// author: harkirat
+		if(opts.vertOffset) {
+			page.clipRect = {
+				top: 0,
+				left: 0,
+				height: opts.vertOffset,
+				width: opts.width
+			};
+		}
+
 		log.call(console, page.renderBase64(opts.format));
 		phantom.exit();
 	}, opts.delay * 1000);
