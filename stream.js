@@ -27,6 +27,10 @@ if (opts.userAgent) {
 	page.settings.userAgent = opts.userAgent;
 }
 
+if(opts.noImages) {
+   page.settings.loadImages = false;
+}
+
 page.settings.resourceTimeout = (opts.timeout || 60) * 1000;
 
 phantom.cookies = opts.cookies;
