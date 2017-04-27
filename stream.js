@@ -170,7 +170,52 @@ page.open(opts.url, function (status) {
 			};
 		}
 
-		log.call(console, page.renderBase64(opts.format));
-		phantom.exit();
+
+		// The code below halts further processing until all loading is finished
+
+		// function getTimestamp(){
+		// 	return new Date().getTime();
+		// }
+
+		// var last_timestamp = getTimestamp();
+		var requestsArray = [];
+
+		page.onResourceRequested = function(requestData, networkRequest) {
+		    // update the timestamp when there is a request
+		    // last_timestamp = getTimestamp();
+		    requestsArray.push(requestData.id);
+		};
+		page.onResourceReceived = function(response) {
+		    // update the timestamp when there is a response
+		    // last_timestamp = getTimestamp();
+
+		    // If request is complete, remove it from requestsArray
+		    if(response.stage==="end"){
+			    var index = requestsArray.indexOf(response.id);
+	  			requestsArray.splice(index, 1);
+	  		}
+		};
+
+		// Checks every 0.5 secs if page is loaded && last network interaction was > 1 secs ago && all requests are completed
+		// Currently checking only for all requests every 0.5 secs
+		function checkReadyState() {
+			window.setTimeout(function() {
+				var current_timestamp = getTimestamp();
+
+				var readyState = page.evaluate(function () {
+					return document.readyState;
+				});
+
+				// if (readyState === "complete" && current_timestamp-last_timestamp > 1000 && requestsArray.length === 0) {
+				if (readyState === "complete" && requestsArray.length === 0) {
+					log.call(console, page.renderBase64(opts.format));
+					phantom.exit();
+				}else{
+					checkReadyState();
+				}
+			}, 500);
+		}
+		checkReadyState();
+
 	}, opts.delay * 1000);
 });
