@@ -200,7 +200,7 @@ page.open(opts.url, function (status) {
 		// Currently checking only for all requests every 0.5 secs
 		function checkReadyState() {
 			window.setTimeout(function() {
-				var current_timestamp = getTimestamp();
+				// var current_timestamp = getTimestamp();
 
 				var readyState = page.evaluate(function () {
 					return document.readyState;
