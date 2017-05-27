@@ -28,7 +28,7 @@ if (opts.userAgent) {
 }
 
 if(opts.noImages) {
-   page.settings.loadImages = false;
+	page.settings.loadImages = false;
 }
 
 page.settings.resourceTimeout = (opts.timeout || 60) * 1000;
@@ -63,12 +63,56 @@ page.viewportSize = {
 page.customHeaders = opts.headers || {};
 page.zoomFactor = opts.scale;
 
+var requestsArray = [];
+
+page.onResourceRequested = function(requestData, networkRequest) {
+	// update the timestamp when there is a request
+	// last_timestamp = getTimestamp();
+	// console.log("REQ",JSON.stringify(requestData.url));
+	requestsArray.push(requestData.id);
+};
+page.onResourceReceived = function(response) {
+	// update the timestamp when there is a response
+	// last_timestamp = getTimestamp();
+
+	// console.log("response",JSON.stringify(response.url),response.stage);
+	// If request is complete, remove it from requestsArray
+	if(response.stage==="end"){
+		var index = requestsArray.indexOf(response.id);
+		requestsArray.splice(index, 1);
+	}
+};
+
+
+// Checks every 0.5 secs if page is loaded && last network interaction was > 1 secs ago && all requests are completed
+// Currently checking only for all requests every 0.5 secs
+function checkReadyState(callback) {
+	setTimeout(function() {
+		// var current_timestamp = getTimestamp();
+
+		var readyState = page.evaluate(function () {
+			return (document.readyState === "interactive" || document.readyState === "complete");
+		});
+
+		// if (readyState === "complete" && current_timestamp-last_timestamp > 1000 && requestsArray.length === 0) {
+		if (readyState && requestsArray.length === 0) {
+			callback();
+		}else{
+			checkReadyState();
+		}
+	}, 500);
+}
+
 page.open(opts.url, function (status) {
 	if (status === 'fail') {
 		console.error('Couldn\'t load url: ' + opts.url);
 		phantom.exit(1);
 		return;
 	}
+	checkReadyState(pageReady);
+})
+
+function pageReady() {
 
 	if (opts.crop) {
 		page.clipRect = {
@@ -95,7 +139,8 @@ page.open(opts.url, function (status) {
 		}
 	}, opts.css);
 
-	window.setTimeout(function () {
+
+	setTimeout(function () {
 		if (opts.hide) {
 			page.evaluate(function (els) {
 				els.forEach(function (el) {
@@ -124,7 +169,6 @@ page.open(opts.url, function (status) {
 		if (opts.script) {
 			page.evaluateJavaScript('function () { ' + opts.script + '}');
 		}
-
 
 		// <--------------------- CUSTOMISED CODE BELOW --------------->
 		// Kept separate to avoid conflicts due to future pulls
@@ -170,52 +214,8 @@ page.open(opts.url, function (status) {
 			};
 		}
 
-
-		// The code below halts further processing until all loading is finished
-
-		// function getTimestamp(){
-		// 	return new Date().getTime();
-		// }
-
-		// var last_timestamp = getTimestamp();
-		var requestsArray = [];
-
-		page.onResourceRequested = function(requestData, networkRequest) {
-		    // update the timestamp when there is a request
-		    // last_timestamp = getTimestamp();
-		    requestsArray.push(requestData.id);
-		};
-		page.onResourceReceived = function(response) {
-		    // update the timestamp when there is a response
-		    // last_timestamp = getTimestamp();
-
-		    // If request is complete, remove it from requestsArray
-		    if(response.stage==="end"){
-			    var index = requestsArray.indexOf(response.id);
-	  			requestsArray.splice(index, 1);
-	  		}
-		};
-
-		// Checks every 0.5 secs if page is loaded && last network interaction was > 1 secs ago && all requests are completed
-		// Currently checking only for all requests every 0.5 secs
-		function checkReadyState() {
-			window.setTimeout(function() {
-				// var current_timestamp = getTimestamp();
-
-				var readyState = page.evaluate(function () {
-					return document.readyState;
-				});
-
-				// if (readyState === "complete" && current_timestamp-last_timestamp > 1000 && requestsArray.length === 0) {
-				if (readyState === "complete" && requestsArray.length === 0) {
-					log.call(console, page.renderBase64(opts.format));
-					phantom.exit();
-				}else{
-					checkReadyState();
-				}
-			}, 500);
-		}
-		checkReadyState();
+		log.call(console, page.renderBase64(opts.format));
+		phantom.exit();
 
 	}, opts.delay * 1000);
-});
+}
