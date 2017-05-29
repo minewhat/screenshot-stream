@@ -96,9 +96,9 @@ function checkReadyState(callback) {
 
 		// if (readyState === "complete" && current_timestamp-last_timestamp > 1000 && requestsArray.length === 0) {
 		if (readyState && requestsArray.length === 0) {
-			callback();
+			callback(callback);
 		}else{
-			checkReadyState();
+			checkReadyState(callback);
 		}
 	}, 500);
 }
