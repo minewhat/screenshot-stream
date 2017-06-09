@@ -5,6 +5,7 @@ var page = require('webpage').create();
 var objectAssign = require('object-assign');
 
 var opts = JSON.parse(system.args[1]);
+
 var log = console.log;
 
 function formatTrace(trace) {
@@ -35,11 +36,11 @@ page.settings.resourceTimeout = (opts.timeout || 60) * 1000;
 
 phantom.cookies = opts.cookies;
 
-phantom.onError = function (err, trace) {
-	err = err.replace(/\n/g, '');
-	console.error('PHANTOM ERROR: ' + err + formatTrace(trace[0]));
-	phantom.exit(1);
-};
+// phantom.onError = function (err, trace) {
+// 	err = err.replace(/\n/g, '');
+// 	console.error('PHANTOM ERROR: ' + err + formatTrace(trace[0]));
+// 	phantom.exit(1);
+// };
 
 page.onError = function (err, trace) {
 	err = err.replace(/\n/g, '');
@@ -65,6 +66,10 @@ page.zoomFactor = opts.scale;
 
 var requestsArray = [];
 
+// page.onConsoleMessage = function(msg, lineNum, sourceId) {
+//   console.log('CONSOLE: ' + msg + ' (from line #' + lineNum + ' in "' + sourceId + '")');
+// };
+
 page.onResourceRequested = function(requestData, networkRequest) {
 	// update the timestamp when there is a request
 	// last_timestamp = getTimestamp();
@@ -84,8 +89,7 @@ page.onResourceReceived = function(response) {
 };
 
 
-// Checks every 0.5 secs if page is loaded && last network interaction was > 1 secs ago && all requests are completed
-// Currently checking only for all requests every 0.5 secs
+// Checks every 0.7 secs if page is loaded && last network interaction was > 1 secs ago && all requests are completed
 function checkReadyState(callback) {
 	setTimeout(function() {
 		// var current_timestamp = getTimestamp();
@@ -109,7 +113,10 @@ page.open(opts.url, function (status) {
 		phantom.exit(1);
 		return;
 	}
-	checkReadyState(pageReady);
+	
+	window.setTimeout(function () {
+		checkReadyState(pageReady);
+	}, opts.delay * 1000);
 })
 
 function pageReady() {
@@ -176,6 +183,7 @@ function pageReady() {
 		// To get selector based snapshot with margin percentage (percentage based on available screen area)
 		// author: harkirat
 		if(opts.focusSelector && opts.focusSelector.selector) {
+			// console.log("opts.focusSelector: ", JSON.stringify(opts.focusSelector));
 			var xMarginPercent = opts.focusSelector.horizMargin || 0;
 			var yMarginPercent = opts.focusSelector.vertMargin || 0;
 
@@ -199,6 +207,7 @@ function pageReady() {
 
 				focusRect.left -= extraHorizWidth / 2;
 			}
+			// console.log("focusRect in the end: ", JSON.stringify(focusRect));
 
 			page.clipRect = focusRect;
 		}
