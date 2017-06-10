@@ -71,15 +71,10 @@ var requestsArray = [];
 // };
 
 page.onResourceRequested = function(requestData, networkRequest) {
-	// update the timestamp when there is a request
-	// last_timestamp = getTimestamp();
 	// console.log("REQ",JSON.stringify(requestData.url));
 	requestsArray.push(requestData.id);
 };
 page.onResourceReceived = function(response) {
-	// update the timestamp when there is a response
-	// last_timestamp = getTimestamp();
-
 	// console.log("response",JSON.stringify(response.url),response.stage);
 	// If request is complete, remove it from requestsArray
 	if(response.stage==="end"){
@@ -92,8 +87,6 @@ page.onResourceReceived = function(response) {
 // Checks every 0.7 secs if page is loaded && last network interaction was > 1 secs ago && all requests are completed
 function checkReadyState(callback) {
 	setTimeout(function() {
-		// var current_timestamp = getTimestamp();
-
 		var readyState = page.evaluate(function () {
 			return (document.readyState === "interactive" || document.readyState === "complete");
 		});
@@ -147,7 +140,7 @@ function pageReady() {
 	}, opts.css);
 
 
-	setTimeout(function () {
+	window.setTimeout(function () {
 		if (opts.hide) {
 			page.evaluate(function (els) {
 				els.forEach(function (el) {
@@ -188,8 +181,11 @@ function pageReady() {
 			var yMarginPercent = opts.focusSelector.vertMargin || 0;
 
 			var focusRect = page.evaluate(function (el) {
+				// console.log("JSON.stringify(el): ", JSON.stringify(el));
+				// console.log("JSON.stringify(document.querySelector(el)): ", JSON.stringify(document.querySelector(el)));
 				return document.querySelector(el).getBoundingClientRect();
 			}, opts.focusSelector.selector);
+			// console.log("focusRect in beginning: ", JSON.stringify(focusRect));
 
 
 			if(yMarginPercent > 0 && yMarginPercent <= 1){
@@ -213,7 +209,6 @@ function pageReady() {
 		}
 
 		// To get area till certain pixels only
-		// author: harkirat
 		if(opts.vertOffset) {
 			page.clipRect = {
 				top: 0,
